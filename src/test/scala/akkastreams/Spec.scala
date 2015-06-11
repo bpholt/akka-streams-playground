@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 
 class Spec extends Specification with Mockito {
   "Akka-Streams" should {
-    "merge" in new Setup {
+    "merge (last element is in shorter input)" in new Setup {
       private val actorRef = TestActorRef(Props[TheActor])
 
       val s1 = Source(immutable.Seq(1, 2, 4))
@@ -22,6 +22,32 @@ class Spec extends Specification with Mockito {
 
       expectMsgPF(timeout) {
         case msg ⇒ msg must_== (1 to 5)
+      }
+    }
+
+    "merge (last element is in longer input)" in new Setup {
+      private val actorRef = TestActorRef(Props[TheActor])
+
+      val s1 = Source(immutable.Seq(1, 2, 4, 6))
+      val s2 = Source(immutable.Seq(3, 5))
+
+      actorRef ! Seq(s1, s2)
+
+      expectMsgPF(timeout) {
+        case msg ⇒ msg must_== (1 to 6)
+      }
+    }
+
+    "pull everything from one input" in new Setup {
+      private val actorRef = TestActorRef(Props[TheActor])
+
+      val s1 = Source(1 to 1000)
+      val s2 = Source.empty
+
+      actorRef ! Seq(s1, s2)
+
+      expectMsgPF(timeout) {
+        case msg ⇒ msg must_== (1 to 1000)
       }
     }
   }
